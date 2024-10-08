@@ -10,11 +10,15 @@ import { UserSigninResponseDto } from './dto/userSigninResponseDto';
 import { getUserProfile } from 'src/helpers/mappings/user/user';
 import { GetUserProfileResponseDto } from 'src/helpers/mappings/user/types';
 import { UpdateUserDto } from './dto/updateUserDto';
+import { AuthService } from 'src/auth/auth.service';
 
 @Injectable()
 export class UserService {
   private readonly saltRound = 10;
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private authService: AuthService,
+  ) {}
 
   async registerAsync(user: RegisterUserDto, res: Response) {
     try {
@@ -63,7 +67,15 @@ export class UserService {
         });
       }
 
-      let response: GetUserProfileResponseDto = getUserProfile(user);
+      const token = await this.authService.login({
+        username: user.name,
+        userId: user.id,
+      });
+      const userProfile: GetUserProfileResponseDto = getUserProfile(user);
+      let response: UserSigninResponseDto = {
+        user: userProfile,
+        token: token.access_token,
+      };
 
       return res
         .status(HttpStatus.OK)
