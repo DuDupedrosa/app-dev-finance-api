@@ -5,15 +5,17 @@ import {
   Param,
   Post,
   Put,
+  Req,
   Res,
   UseGuards,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { RegisterUserDto } from './dto/registerUserDto';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { userSigninDto } from './dto/userSigninDto';
 import { UpdateUserDto } from './dto/updateUserDto';
 import { JwtAuthGuard } from 'src/auth/jwt/jwt-auth.guard';
+import { RequestWithUser } from 'src/helpers/types/request';
 
 @Controller('user')
 export class UserController {
@@ -33,9 +35,9 @@ export class UserController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get(':id')
-  async GetUserProfile(@Param() params: { id: string }, @Res() res: Response) {
-    return await this.userService.getUserProfileAsync(params.id, res);
+  @Get()
+  async GetUserProfile(@Res() res: Response, @Req() req: RequestWithUser) {
+    return await this.userService.getUserProfileAsync(req.user.userId, res);
   }
 
   @UseGuards(JwtAuthGuard)

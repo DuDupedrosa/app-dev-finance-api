@@ -70,6 +70,7 @@ export class UserService {
       const token = await this.authService.login({
         username: user.name,
         userId: user.id,
+        email: user.email,
       });
       const userProfile: GetUserProfileResponseDto = getUserProfile(user);
       let response: UserSigninResponseDto = {
