@@ -116,9 +116,11 @@ export class UserService {
         data: { ...updateUserDto },
       });
 
+      let response: GetUserProfileResponseDto = getUserProfile(updatedUser);
+
       return res
         .status(HttpStatus.OK)
-        .json({ status: HttpStatus.OK, content: { id: updatedUser.id } });
+        .json({ status: HttpStatus.OK, content: response });
     } catch (err) {
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
         status: HttpStatus.INTERNAL_SERVER_ERROR,
