@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Post,
@@ -16,6 +17,7 @@ import { userSigninDto } from './dto/userSigninDto';
 import { UpdateUserDto } from './dto/updateUserDto';
 import { JwtAuthGuard } from 'src/auth/jwt/jwt-auth.guard';
 import { RequestWithUser } from 'src/helpers/types/request';
+import { ChangePasswordDto } from './dto/changePasswordDto';
 
 @Controller('user')
 export class UserController {
@@ -44,5 +46,25 @@ export class UserController {
   @Put()
   async UpdateUser(@Body() updateUserDto: UpdateUserDto, @Res() res: Response) {
     return await this.userService.updateUserProfileAsync(updateUserDto, res);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete()
+  async deleteUser(@Res() res: Response, @Req() req: RequestWithUser) {
+    return this.userService.deleteUserAsync(req.user.userId, res);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Put('changePassword')
+  async changePassword(
+    @Body() changePasswordDto: ChangePasswordDto,
+    @Res() res: Response,
+    @Req() req: RequestWithUser,
+  ) {
+    return await this.userService.changePasswordAsync(
+      req.user.userId,
+      changePasswordDto,
+      res,
+    );
   }
 }

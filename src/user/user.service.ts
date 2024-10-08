@@ -11,6 +11,7 @@ import { getUserProfile } from 'src/helpers/mappings/user/user';
 import { GetUserProfileResponseDto } from 'src/helpers/mappings/user/types';
 import { UpdateUserDto } from './dto/updateUserDto';
 import { AuthService } from 'src/auth/auth.service';
+import { ChangePasswordDto } from './dto/changePasswordDto';
 
 @Injectable()
 export class UserService {
@@ -55,7 +56,7 @@ export class UserService {
         });
       }
 
-      const passwordIsValid = bcrypt.compareSync(
+      const passwordIsValid = await bcrypt.compare(
         userDto.password,
         user.password,
       );
@@ -138,6 +139,78 @@ export class UserService {
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
         status: HttpStatus.INTERNAL_SERVER_ERROR,
         message: `user.profile|updateUserProfileAsync: ${err.message}`,
+      });
+    }
+  }
+
+  async deleteUserAsync(userId: string, res: Response) {
+    try {
+      const user = await this.prisma.user.findUnique({ where: { id: userId } });
+
+      if (!user) {
+        return res
+          .status(HttpStatus.NOT_FOUND)
+          .json({ status: HttpStatus.NOT_FOUND, message: 'user_not_found' });
+      }
+
+      await this.prisma.user.delete({
+        where: { id: user.id },
+      });
+
+      return res
+        .status(HttpStatus.OK)
+        .json({ status: HttpStatus.OK, content: null });
+    } catch (err) {
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: `user.service|deleteUserAsync: ${err.message}`,
+      });
+    }
+  }
+
+  async changePasswordAsync(
+    userId: string,
+    changePasswordDto: ChangePasswordDto,
+    res: Response,
+  ) {
+    try {
+      const user = await this.prisma.user.findUnique({ where: { id: userId } });
+
+      if (!user) {
+        return res
+          .status(HttpStatus.NOT_FOUND)
+          .json({ status: HttpStatus.NOT_FOUND, message: 'user_not_found' });
+      }
+
+      const passwordCompare = await bcrypt.compare(
+        changePasswordDto.currentPassword,
+        user.password,
+      );
+
+      if (!passwordCompare) {
+        return res.status(HttpStatus.BAD_REQUEST).json({
+          status: HttpStatus.BAD_REQUEST,
+          message: 'incorrect_current_password',
+        });
+      }
+
+      const hashNewPassword = await bcrypt.hash(
+        changePasswordDto.newPassword,
+        this.saltRound,
+      );
+
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { password: hashNewPassword },
+      });
+
+      return res
+        .status(HttpStatus.OK)
+        .json({ status: HttpStatus.OK, content: null });
+    } catch (err) {
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: `user.service|changePasswordAsync: ${err.message}`,
       });
     }
   }
