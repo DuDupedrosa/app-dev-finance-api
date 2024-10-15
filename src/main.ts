@@ -12,6 +12,8 @@ async function bootstrap() {
     }),
   );
 
-  await app.listen(3000);
+  await app.listen(3000, '0.0.0.0', () => {
+    console.log('Servidor rodando na porta 3000');
+  });
 }
 bootstrap();

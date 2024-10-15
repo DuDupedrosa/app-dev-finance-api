@@ -21,4 +21,7 @@ model User {
   password String
   lastName String?
   cellphone String?
+  registerDate DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  lastLoginDate DateTime?
 }
