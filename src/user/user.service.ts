@@ -62,8 +62,8 @@ export class UserService {
       );
 
       if (!passwordIsValid) {
-        return res.status(HttpStatus.NOT_FOUND).json({
-          status: HttpStatus.NOT_FOUND,
+        return res.status(HttpStatus.BAD_REQUEST).json({
+          status: HttpStatus.BAD_REQUEST,
           message: 'incorrect_password',
         });
       }
@@ -73,9 +73,9 @@ export class UserService {
         userId: user.id,
         email: user.email,
       });
-      const userProfile: GetUserProfileResponseDto = getUserProfile(user);
+
       let response: UserSigninResponseDto = {
-        user: userProfile,
+        user: { id: user.id, name: user.name },
         token: token.access_token,
       };
 
