@@ -199,6 +199,18 @@ export class UserService {
         this.saltRound,
       );
 
+      const newPasswordIsTheSameCurrent = await bcrypt.compare(
+        changePasswordDto.currentPassword,
+        hashNewPassword,
+      );
+
+      if (newPasswordIsTheSameCurrent) {
+        return res.status(HttpStatus.BAD_REQUEST).json({
+          status: HttpStatus.BAD_REQUEST,
+          message: 'new_password_is_the_same_current',
+        });
+      }
+
       await this.prisma.user.update({
         where: { id: user.id },
         data: { password: hashNewPassword },
