@@ -25,3 +25,11 @@ model User {
   updatedAt DateTime @updatedAt
   lastLoginDate DateTime?
 }
+
+model Expense {
+  id Int @id @default(autoincrement())
+  categoryId Int 
+  date DateTime
+  value Decimal
+  userId String
+}
