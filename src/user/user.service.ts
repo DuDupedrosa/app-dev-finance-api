@@ -79,6 +79,12 @@ export class UserService {
         token: token.access_token,
       };
 
+      // updating last login date
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: { lastLoginDate: new Date() },
+      });
+
       return res
         .status(HttpStatus.OK)
         .json({ status: HttpStatus.OK, content: response });

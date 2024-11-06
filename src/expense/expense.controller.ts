@@ -1,4 +1,15 @@
-import { Controller, Delete, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Query,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { ExpenseService } from './expense.service';
 import { AddExpenseDto } from './dto/addExpenseDto';
 import { Response } from 'express';
@@ -12,9 +23,9 @@ export class ExpenseController {
   @UseGuards(JwtAuthGuard)
   @Post()
   async create(
-    addExpenseDto: AddExpenseDto,
-    res: Response,
-    req: RequestWithUser,
+    @Body() addExpenseDto: AddExpenseDto,
+    @Res() res: Response,
+    @Req() req: RequestWithUser,
   ) {
     return await this.expenseService.addExpenseAsync(
       addExpenseDto,
@@ -24,16 +35,37 @@ export class ExpenseController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Get('list-all')
+  async listAllExpenses(
+    @Res() res: Response,
+    @Req() req: RequestWithUser,
+    @Query() query: { month: string; maxSize: string },
+  ) {
+    return await this.expenseService.getAllExpensesAsync(
+      res,
+      req.user.userId,
+      query.month,
+      query.maxSize,
+    );
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Delete(':id')
   async delete(
-    @Param() params: { id: number },
-    res: Response,
-    req: RequestWithUser,
+    @Param() params: { id: string },
+    @Res() res: Response,
+    @Req() req: RequestWithUser,
   ) {
     return await this.expenseService.deleteAsync(
-      params.id,
+      Number(params.id),
       res,
       req.user.userId,
     );
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('categories')
+  async getAllCategories(@Res() res: Response) {
+    return await this.expenseService.getExpensesCategoriesAsync(res);
   }
 }

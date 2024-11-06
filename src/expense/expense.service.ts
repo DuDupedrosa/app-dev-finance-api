@@ -3,6 +3,7 @@ import { PrismaService } from 'src/prisma.service';
 import { AddExpenseDto } from './dto/addExpenseDto';
 import { Response } from 'express';
 import categories from 'src/helpers/data/categories';
+import { getMonth, parseISO } from 'date-fns';
 
 @Injectable()
 export class ExpenseService {
@@ -41,17 +42,18 @@ export class ExpenseService {
       // da o parseISO
       const dateTimeString = `${date}T${time}:00`;
       // gera a data a partir do parseISO
-      const expenseDate = new Date(dateTimeString);
+      const expenseDate = parseISO(dateTimeString);
+      const expenseDateUTC = expenseDate.toISOString();
 
       let expenseToSave: {
         value: number;
-        date: Date;
+        date: string;
         categoryId: number;
         userId: string;
       } = {
         value: expenseValue,
         categoryId: categoryId,
-        date: expenseDate,
+        date: expenseDateUTC,
         userId,
       };
 
@@ -113,7 +115,12 @@ export class ExpenseService {
     }
   }
 
-  async getAllExpensesByMonthAsync(month: number, res: Response, userId) {
+  async getAllExpensesAsync(
+    res: Response,
+    userId: string,
+    month?: string,
+    maxSize?: string,
+  ) {
     try {
       const user = await this.prismaService.user.findUnique({
         where: { id: userId },
@@ -124,10 +131,59 @@ export class ExpenseService {
           .status(HttpStatus.NOT_FOUND)
           .json({ message: 'not_found_user', status: HttpStatus.NOT_FOUND });
       }
+
+      if (month && month.length) {
+        const monthNumber = Number(month);
+
+        if (isNaN(monthNumber) || monthNumber < 0 || monthNumber > 11)
+          return res
+            .status(HttpStatus.BAD_REQUEST)
+            .json({ message: 'invalid_month', status: HttpStatus.BAD_REQUEST });
+      }
+
+      if (maxSize && maxSize.length) {
+        const numberMaxSize = Number(maxSize);
+
+        if (isNaN(numberMaxSize)) {
+          return res.status(HttpStatus.BAD_REQUEST).json({
+            message: 'invalid_max_size',
+            status: HttpStatus.BAD_REQUEST,
+          });
+        }
+      }
+
+      const expenses = await this.prismaService.expense.findMany({
+        where: { userId },
+      });
+      let filteredExpenses = month
+        ? expenses.filter((expense) => getMonth(expense.date) === Number(month))
+        : expenses;
+
+      if (maxSize && maxSize.length) {
+        filteredExpenses = filteredExpenses.slice(0, Number(maxSize));
+      }
+
+      return res.status(HttpStatus.OK).json({
+        content: filteredExpenses,
+        status: HttpStatus.OK,
+      });
     } catch (err) {
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
         status: HttpStatus.INTERNAL_SERVER_ERROR,
         message: `expense.service|getAllExpensesByMonthAsync: ${err.message}`,
+      });
+    }
+  }
+
+  async getExpensesCategoriesAsync(res: Response) {
+    try {
+      return res
+        .status(HttpStatus.OK)
+        .json({ content: categories, status: HttpStatus.OK });
+    } catch (err) {
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: `expense.service|getExpensesCategoriesAsync: ${err.message}`,
       });
     }
   }
