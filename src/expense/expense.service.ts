@@ -4,6 +4,7 @@ import { AddExpenseDto } from './dto/addExpenseDto';
 import { Response } from 'express';
 import categories from 'src/helpers/data/categories';
 import { getMonth, parseISO } from 'date-fns';
+import { Decimal } from 'decimal.js';
 
 @Injectable()
 export class ExpenseService {
@@ -184,6 +185,51 @@ export class ExpenseService {
       return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
         status: HttpStatus.INTERNAL_SERVER_ERROR,
         message: `expense.service|getExpensesCategoriesAsync: ${err.message}`,
+      });
+    }
+  }
+
+  async getTotalByMonthAsync(res: Response, month: number, userId: string) {
+    try {
+      const user = await this.prismaService.user.findUnique({
+        where: { id: userId },
+      });
+
+      if (!user) {
+        return res
+          .status(HttpStatus.NOT_FOUND)
+          .json({ message: 'not_found_user', status: HttpStatus.NOT_FOUND });
+      }
+
+      const expenses = await this.prismaService.expense.findMany({
+        where: { userId },
+      });
+
+      let filteredExpenses = expenses.filter(
+        (expense) => getMonth(expense.date) === Number(month),
+      );
+      const sumExpenses = filteredExpenses.reduce(
+        (prev: Decimal, next) => prev.plus(new Decimal(next.value)), // Converte o valor para Decimal
+        new Decimal(0),
+      );
+
+      let response: {
+        total: number;
+        referenceMonth: number;
+        date: string | Date;
+      } = {
+        total: sumExpenses.toNumber(),
+        referenceMonth: month,
+        date: expenses.length > 0 ? expenses[0].date : '',
+      };
+
+      return res
+        .status(HttpStatus.OK)
+        .json({ content: response, status: HttpStatus.OK });
+    } catch (err) {
+      return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        message: `expense.service|getTotalByMonthAsync: ${err.message}`,
       });
     }
   }

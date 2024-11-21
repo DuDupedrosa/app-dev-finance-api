@@ -68,4 +68,18 @@ export class ExpenseController {
   async getAllCategories(@Res() res: Response) {
     return await this.expenseService.getExpensesCategoriesAsync(res);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('total-month/:month')
+  async getTotalByMonth(
+    @Param() params: { month: string },
+    @Res() res: Response,
+    @Req() req: RequestWithUser,
+  ) {
+    return await this.expenseService.getTotalByMonthAsync(
+      res,
+      Number(params.month),
+      req.user.userId,
+    );
+  }
 }
