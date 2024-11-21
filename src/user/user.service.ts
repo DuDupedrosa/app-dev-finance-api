@@ -21,8 +21,20 @@ export class UserService {
     private authService: AuthService,
   ) {}
 
+  // validar email e senha - estamos confiando no front, mas é bom ter no back
   async registerAsync(user: RegisterUserDto, res: Response) {
     try {
+      const findUser = await this.prisma.user.findUnique({
+        where: { email: user.email },
+      });
+
+      if (findUser) {
+        return res.status(HttpStatus.BAD_REQUEST).json({
+          message: 'email_already_register',
+          status: HttpStatus.BAD_REQUEST,
+        });
+      }
+
       const hashedPassword = await bcrypt.hash(user.password, this.saltRound);
       let payload: RegisterUserDataDto = { ...user, id: uuidv4() };
       payload.password = hashedPassword;
